@@ -2,9 +2,6 @@ import 'dart:ui';
 import 'package:al_hafidz/globals.dart';
 import 'package:al_hafidz/screens/doa_page.dart';
 import 'package:al_hafidz/screens/prayer_times_screen.dart';
-import 'package:al_hafidz/tabs/hijb_tab.dart';
-import 'package:al_hafidz/tabs/page_tab.dart';
-import 'package:al_hafidz/tabs/para_tab.dart';
 import 'package:al_hafidz/tabs/surah_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -23,14 +20,13 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   // Controller untuk PageView
-  final PageController _pageController = PageController();
 
   // Method untuk berpindah halaman saat bottom navigation di-klik
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
-    if (index == 2) {
+    if (index == 1) {
       // Ketika tombol Doa (index 3) diklik
       Navigator.push(
         context,
@@ -39,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 PrayerTimesScreen()), // Navigasi ke halaman DoaPage
       );
     }
-    if (index == 3) {
+    if (index == 2) {
       // Ketika tombol Doa (index 3) diklik
       Navigator.push(
         context,
@@ -51,79 +47,80 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: background,
-      appBar: _appbar(),
-      bottomNavigationBar: _bottomNavigationBar(),
-      body: DefaultTabController(
-        length: 4,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) => [
-              SliverToBoxAdapter(
-                child: _greeting(),
-              ),
-              SliverAppBar(
-                pinned: true,
-                elevation: 0,
-                backgroundColor: background,
-                automaticallyImplyLeading: false,
-                shape: Border(
-                    bottom: BorderSide(
-                        width: 3,
-                        color: const Color(0xffaaaaaa).withOpacity(.1))),
-                bottom: PreferredSize(
-                  preferredSize: const Size.fromHeight(0),
-                  child: _tab(),
-                ),
-              )
-            ],
-            body: PageView(
-              controller: _pageController,
-              onPageChanged: (index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              children: [
-                const TabBarView(
-                  children: [
-                    SurahTab(),
-                    ParaTab(),
-                    PageTab(),
-                    HijbTab(),
-                  ],
-                ),
-                Center(
-                    child: Text('Tips Page')), // Placeholder untuk halaman Tips
-                Center(
-                    child: Text(
-                        'Prayer Page')), // Placeholder untuk halaman Prayer
-                Center(
-                    child: Text('Doa Page')), // Placeholder untuk halaman Doa
-                Center(
-                    child: Text(
-                        'Bookmark Page')), // Placeholder untuk halaman Bookmark
-              ],
+  return Scaffold(
+    backgroundColor: background,
+    appBar: _appbar(),
+    bottomNavigationBar: _bottomNavigationBar(),
+    body: DefaultTabController(
+      length: 1,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            SliverToBoxAdapter(
+              child: _greeting(),
             ),
-          ),
+            SliverAppBar(
+              pinned: true,
+              elevation: 0,
+              backgroundColor: background,
+              automaticallyImplyLeading: false,
+              shape: Border(
+                bottom: BorderSide(
+                  width: 3,
+                  color: const Color(0xffaaaaaa).withOpacity(.1),
+                ),
+              ),
+              bottom: PreferredSize(
+                preferredSize: const Size.fromHeight(0),
+                child: _tab(),
+              ),
+            )
+          ],
+          // Mengganti PageView dengan konten yang tidak bisa digeser
+          body: _selectedIndex == 0
+              ? TabBarView(
+                  physics: const NeverScrollableScrollPhysics(), // Mengunci geseran
+                  children: [
+                    SurahTab(),  // Konten untuk SurahTab yang bisa menggunakan TabBarView di dalamnya
+                  ],
+                )
+              : Center(
+                  child: _getPageContent(_selectedIndex),
+                ),
         ),
       ),
-    );
+    ),
+  );
+}
+
+Widget _getPageContent(int index) {
+  switch (index) {
+    case 1:
+      return Text('Tips Page'); // Placeholder untuk halaman Tips
+    case 2:
+      return Text('Prayer Page'); // Placeholder untuk halaman Prayer
+    case 3:
+      return Text('Doa Page'); // Placeholder untuk halaman Doa
+    case 4:
+      return Text('Bookmark Page'); // Placeholder untuk halaman Bookmark
+    default:
+      return Text('Unknown Page'); // Placeholder untuk halaman yang tidak diketahui
   }
+}
+
 
   TabBar _tab() {
     return TabBar(
       unselectedLabelColor: text,
       labelColor: Colors.white,
       indicatorColor: primary,
-      indicatorWeight: 3,
+     
       tabs: [
         _tabItem(label: "Surah"),
-        _tabItem(label: "Para"),
-        _tabItem(label: "Page"),
-        _tabItem(label: "Hijb"),
+
+  
+
       ],
     );
   }
@@ -261,11 +258,10 @@ class _HomeScreenState extends State<HomeScreen> {
         onTap: _onItemTapped, // Menambahkan fungsi untuk navigasi
         items: [
           _bottomBarItem(icon: "assets/svgs/quran-icon.svg", label: "quran"),
-          _bottomBarItem(icon: "assets/svgs/lamp-icon.svg", label: "Tips"),
+          
           _bottomBarItem(icon: "assets/svgs/pray-icon.svg", label: "Prayer"),
           _bottomBarItem(icon: "assets/svgs/doa-icon.svg", label: "Doa"),
-          _bottomBarItem(
-              icon: "assets/svgs/bookmark-icon.svg", label: "Bookmark"),
+
         ],
       );
 

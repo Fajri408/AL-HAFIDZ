@@ -1,5 +1,6 @@
 import 'package:al_hafidz/globals.dart';
 import 'package:al_hafidz/screens/home_screen.dart';
+import 'package:al_hafidz/screens/prayer_times_screen.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:flutter/services.dart' as rootBundle;
@@ -17,7 +18,7 @@ class _DoaPageState extends State<DoaPage> {
   List<int> bookmarkedDoas = [];
   bool isLoading = true;
   Color titleColor = const Color.fromARGB(255, 255, 255, 255); // Warna judul
-  int _selectedIndex = 3; // Default selected index for Doa page
+  int _selectedIndex = 2; // Default selected index for Doa page
 
   @override
   void initState() {
@@ -68,50 +69,59 @@ class _DoaPageState extends State<DoaPage> {
 
   // Fungsi untuk mengubah halaman saat menekan tombol navigasi
   void _onItemTapped(int index) {
-    switch (index) {
-      case 0:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  HomeScreen()), 
-        );
-        break;
-      case 1:
-        Navigator.pushReplacementNamed(
-            context, '/tipsPage'); 
-        break;
-      case 2:
-        Navigator.pushReplacementNamed(
-            context, '/prayerPage'); 
-        break;
-      case 3:
-        // Doa Page - current page
-        break;
-      case 4:
-        Navigator.pushReplacementNamed(
-            context, '/bookmarkPage'); 
-        break;
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 0) {
+      // Ketika tombol Doa (index 3) diklik
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                HomeScreen()), // Navigasi ke halaman DoaPage
+      );
+    }
+    if (index == 1) {
+      // Ketika tombol Doa (index 3) diklik
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) =>
+                PrayerTimesScreen()), // Navigasi ke halaman DoaPage
+      );
+    }
+    if (index == 2) {
+      // Ketika tombol Doa (index 3) diklik
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => DoaPage()), // Navigasi ke halaman DoaPage
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true,
+      extendBodyBehindAppBar: false,
       appBar: AppBar(
         title: Text(
-          'Doa Harian',
-          style: TextStyle(color: Colors.white),
+          'Doa Page',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
+        centerTitle: true,
         backgroundColor: background,
         elevation: 0,
-        iconTheme: IconThemeData(color: Colors.white),
+        automaticallyImplyLeading: false, // Disables the back button
       ),
       backgroundColor: background,
       body: isLoading
           ? Center(child: CircularProgressIndicator())
           : ListView.separated(
+               // Adds padding to prevent overlap
               itemCount: doas.length,
               separatorBuilder: (context, index) => Divider(
                   color: const Color.fromARGB(255, 255, 255, 255)
@@ -121,8 +131,7 @@ class _DoaPageState extends State<DoaPage> {
                     doa: doas[index], index: index, context: context);
               },
             ),
-      bottomNavigationBar:
-          _bottomNavigationBar(), 
+      bottomNavigationBar: _bottomNavigationBar(),
     );
   }
 
@@ -135,11 +144,8 @@ class _DoaPageState extends State<DoaPage> {
         onTap: _onItemTapped, // Navigate on tap
         items: [
           _bottomBarItem(icon: "assets/svgs/quran-icon.svg", label: "Quran"),
-          _bottomBarItem(icon: "assets/svgs/lamp-icon.svg", label: "Tips"),
           _bottomBarItem(icon: "assets/svgs/pray-icon.svg", label: "Prayer"),
           _bottomBarItem(icon: "assets/svgs/doa-icon.svg", label: "Doa"),
-          _bottomBarItem(
-              icon: "assets/svgs/bookmark-icon.svg", label: "Bookmark"),
         ],
       );
 
@@ -152,7 +158,7 @@ class _DoaPageState extends State<DoaPage> {
         ),
         activeIcon: SvgPicture.asset(
           icon,
-          color: primary, 
+          color: primary,
         ),
         label: label,
       );
