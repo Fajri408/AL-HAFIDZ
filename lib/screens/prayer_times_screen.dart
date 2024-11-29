@@ -13,24 +13,24 @@ class PrayerTimesScreen extends StatefulWidget {
   _PrayerTimesScreenState createState() => _PrayerTimesScreenState();
 }
 
-class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
-  final PrayerTimesService _prayerTimesService = PrayerTimesService();
+class _PrayerTimesScreenState extends State<PrayerTimesScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
 
-  final AudioPlayer _audioPlayer = AudioPlayer(); // AudioPlayer instance
+  final PrayerTimesService _prayerTimesService = PrayerTimesService();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   Map<String, dynamic>? prayerTimes;
-
   bool isLoading = true;
-
   int _selectedIndex = 1;
 
+  DateTime? lastAzanPlayed;
   DateTime currentTime = DateTime.now();
-
   Timer? timer;
 
-  bool isPlayingAzan = false; // Track if Azan is playing
-
-  bool hasShownNotification = false; // Track if Azan is playing
+  bool isPlayingAzan = false;
+  bool hasShownNotification = false;
 
   final List<String> prayerNames = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
   final List<String> customPrayerNames = [
@@ -39,43 +39,47 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
     "Asar",
     "Maghrib",
     "Isya"
-  ]; // Custom names
+  ];
 
   @override
   void initState() {
     super.initState();
     fetchPrayerTimes();
     startClock();
+
+    // Cegah pemutaran ulang saat kembali ke halaman jika adzan masih aktif
+    if (isPlayingAzan) {
+      print("Adzan sedang aktif, tidak akan diputar ulang.");
+    } else {
+      print("Adzan tidak aktif.");
+    }
   }
 
   @override
   void dispose() {
     timer?.cancel();
-    _audioPlayer.dispose(); // Dispose of audio player
+    _audioPlayer.dispose();
     super.dispose();
   }
 
   void checkForAzanTime() {
-    // Pastikan prayerTimes tidak null dan sudah dimuat
-    if (prayerTimes == null) {
-      print("Prayer times data is not yet available.");
-      return; // Keluar dari fungsi jika data belum tersedia
-    }
+    if (prayerTimes == null || isPlayingAzan) return;
 
-    // Memeriksa waktu azan untuk setiap sholat
     for (String prayer in prayerNames) {
-      // Mengambil waktu sholat langsung dari prayerTimes
       String? prayerTimeString = prayerTimes![prayer];
-
-      print("Checking azan time for $prayer: $prayerTimeString");
-
-      // Cek jika waktu azan valid
       if (prayerTimeString != null) {
-        DateTime? prayerTime = DateTime.tryParse(
-            "1970-01-01 $prayerTimeString"); // Tambahkan tanggal dummy untuk parsing
+        DateTime? prayerTime = DateTime.tryParse("1970-01-01 $prayerTimeString");
+
         if (prayerTime != null && _isNow(prayerTime)) {
+          if (lastAzanPlayed != null &&
+              currentTime.difference(lastAzanPlayed!).inMinutes < 1) {
+            print("Adzan baru saja diputar/dihentikan. Tidak akan diputar ulang.");
+            return;
+          }
+
           playAzan();
-          break; // Hentikan loop setelah memutar azan
+          lastAzanPlayed = currentTime;
+          break;
         }
       }
     }
@@ -84,7 +88,7 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   Future<void> fetchPrayerTimes() async {
     try {
       Map<String, dynamic> times = await _prayerTimesService.fetchPrayerTimes();
-      print("Data prayer times yang diambil: $times"); // Log tambahan
+      print("Data prayer times yang diambil: $times");
       setState(() {
         prayerTimes = times;
         isLoading = false;
@@ -98,39 +102,40 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
   }
 
   void startClock() {
+    if (timer != null && timer!.isActive) {
+      print("Timer sudah berjalan.");
+      return;
+    }
+
     timer = Timer.periodic(Duration(seconds: 1), (timer) {
       setState(() {
         currentTime = DateTime.now();
       });
-      print("Current time: $currentTime");
-      // Check Azan time every second
       checkForAzanTime();
     });
   }
 
-  // Check if current time matches a prayer time (within a minute)
   bool _isNow(DateTime prayerTime) {
     return currentTime.hour == prayerTime.hour &&
         currentTime.minute == prayerTime.minute;
   }
 
-  // Play Azan sound with option to stop
-  // Play Azan sound with option to stop
-// Play Azan sound with option to stop
-  // Play Azan sound with option to stop
   Future<void> playAzan() async {
-    if (!isPlayingAzan) {
-      print("Playing Azan sound");
-      setState(() => isPlayingAzan = true);
-      await _audioPlayer
-          .play(AssetSource('audio/azan.mp3')); // Pastikan path ini benar
-      _showAzanNotification();
+    if (isPlayingAzan) {
+      print("Adzan sedang aktif. Tidak akan diputar ulang.");
+      return;
     }
+
+    print("Playing Azan sound");
+    setState(() => isPlayingAzan = true);
+    await _audioPlayer.play(AssetSource('audio/azan.mp3'));
+
+    _showAzanNotification();
   }
 
-  // Show dialog with option to stop Azan
   void _showAzanNotification() {
-    print("Showing Azan notification dialog");
+    if (hasShownNotification) return;
+    setState(() => hasShownNotification = true);
 
     showDialog(
       context: context,
@@ -142,7 +147,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
             TextButton(
               onPressed: () {
                 _stopAzan();
-
                 Navigator.of(context).pop();
               },
               child: Text('Matikan'),
@@ -150,17 +154,17 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
           ],
         );
       },
-    );
+    ).then((_) {
+      setState(() => hasShownNotification = false);
+    });
   }
 
-  // Stop Azan sound
   Future<void> _stopAzan() async {
     await _audioPlayer.stop();
-
     setState(() {
       isPlayingAzan = false;
-
-      hasShownNotification = false;
+      lastAzanPlayed = currentTime;
+      print("Adzan dihentikan oleh pengguna.");
     });
   }
 
@@ -177,20 +181,19 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
           context,
           MaterialPageRoute(builder: (context) => PrayerTimesScreen()),
         );
+        break;
       case 2:
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => DoaPage()),
         );
         break;
-
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: false,
       appBar: AppBar(
         title: Text(
           'Jadwal Sholat',
@@ -202,7 +205,6 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
       ),
       backgroundColor: background,
       body: Stack(
@@ -244,10 +246,8 @@ class _PrayerTimesScreenState extends State<PrayerTimesScreen> {
         onTap: _onItemTapped,
         items: [
           _bottomBarItem(icon: "assets/svgs/quran-icon.svg", label: "Quran"),
-
           _bottomBarItem(icon: "assets/svgs/pray-icon.svg", label: "Prayer"),
           _bottomBarItem(icon: "assets/svgs/doa-icon.svg", label: "Doa"),
-          
         ],
       );
 

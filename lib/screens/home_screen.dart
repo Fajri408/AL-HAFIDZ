@@ -145,7 +145,7 @@ Widget _getPageContent(int index) {
           height: 4,
         ),
         Text(
-          "Fajri Abdul Ghani",
+          "Calon Pengguni surga",
           style: GoogleFonts.poppins(
               fontSize: 24, fontWeight: FontWeight.w600, color: Colors.white),
         ),
